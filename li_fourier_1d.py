@@ -174,13 +174,18 @@ test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test,
 
 # model
 model = FNO1d(modes, width).cuda()
-print(count_params(model))
+print("Model parameters: ", count_params(model))
 
 ################################################################
 # training and evaluation
 ################################################################
 optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+
+# save evaluation metrics
+train_losses = np.zeros(epochs)
+test_losses = np.zeros(epochs)
+
 
 myloss = LpLoss(size_average=False)
 for ep in range(epochs):
@@ -218,6 +223,10 @@ for ep in range(epochs):
 
     t2 = default_timer()
     print(ep, t2-t1, train_mse, train_l2, test_l2)
+    # save performance metrics
+    train_losses[ep] = train_l2
+    test_losses[ep] = test_l2
+
 
 # torch.save(model, 'model/ns_fourier_burgers')
 pred = torch.zeros(y_test.shape)
@@ -236,3 +245,14 @@ with torch.no_grad():
         index = index + 1
 
 scipy.io.savemat('pred/burger_test.mat', mdict={'pred': pred.cpu().numpy()})
+
+################################################################
+# metrics and plots
+################################################################
+plt.figure(1)
+plt.plot(range(epochs-1), train_losses[1:], label="Training Loss")
+plt.plot(range(epochs-1), test_losses[1:], label="Test Loss")
+plt.title(f"Training and Test Loss with {epochs} Epochs")
+plt.legend()
+plt.show()
+print(f"Done plotting {epochs}")
