@@ -1,0 +1,8 @@
+# opencv-python
+numpy
+scipy
+Pillow
+matplotlib
+# tqdm
+
+h5py
