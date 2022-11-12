@@ -148,7 +148,7 @@ s = h
 batch_size = 20
 learning_rate = 0.001
 
-epochs = 100
+epochs = 200
 step_size = 50
 gamma = 0.5
 
@@ -171,6 +171,12 @@ x_train = x_data[:ntrain,:,:]  # index along variable dimension
 y_train = y_data[:ntrain,:,:]
 x_test = x_data[-ntest:,:,:]
 y_test = y_data[-ntest:,:,:]
+
+# Normalize the data (might be wrong dimension...)
+x_train = F.normalize(x_data, p=2.0, dim=1)  # normalize along spatial coordinates
+y_train = F.normalize(y_data, p=2.0, dim=1)
+x_test = F.normalize(x_test, p=2.0, dim=1)
+y_test = F.normalize(y_test, p=2.0, dim=1)
 
 # x_train = x_train.reshape(ntrain,s,1)
 # x_test = x_test.reshape(ntest,s,1)
@@ -252,15 +258,21 @@ with torch.no_grad():
         # print(index, test_l2)
         index = index + 1
 
-scipy.io.savemat(f'pred/euler_{epochs}.mat', mdict={'pred': pred.cpu().numpy()})
+scipy.io.savemat(f'pred/euler_v2_{epochs}ep.mat', mdict={'y_hat': pred.cpu().numpy(),
+                                                    'y'    : y_test.cpu().numpy(),
+                                                    'x'    : x_test.cpu().numpy(),
+                                                    })
+
 
 ################################################################
 # metrics and plots
 ################################################################
 plt.figure(1)
 plt.plot(range(epochs), train_losses, label="Training Loss")
-plt.plot(range(epochs), test_losses, label="Test Loss")
-plt.title(f"Training and Test Loss with {epochs} Epochs")
+# plt.plot(range(epochs), test_losses, label="Test Loss")
+plt.title(f"Training Loss with {epochs} Epochs")
+plt.xlabel("Epoch")
+plt.ylabel("Relative L2 Error")
 plt.legend()
 plt.show()
 print(f"Done plotting {epochs}")
