@@ -259,9 +259,9 @@ with torch.no_grad():
         index = index + 1
 
 scipy.io.savemat(f'pred/euler_v2_{epochs}ep.mat', mdict={'y_hat': pred.cpu().numpy(),
-                                                    'y'    : y_test.cpu().numpy(),
-                                                    'x'    : x_test.cpu().numpy(),
-                                                    })
+                                                         'y'    : y_test.cpu().numpy(),
+                                                         'x'    : x_test.cpu().numpy(),
+                                                        })
 
 
 ################################################################

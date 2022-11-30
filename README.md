@@ -11,4 +11,5 @@ In this project we attempt to use a Fourier Neural Operator to Resolve Shock Con
 - [ ] Parallel Fourier channels for different variables
 - [ ] Hyperparameter exploration
 - [ ] Sobolev norm loss function
-
+- [x] U-net for baseline comparison
+- [ ] File cleanup & Code refactor
