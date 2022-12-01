@@ -58,9 +58,18 @@ class SpectralConv1d(nn.Module):
         x = torch.fft.irfft(out_ft, n=x.size(-1))
         return x
 
-class FNO1d(nn.Module):
+class SpatialBias(nn.Module):
+    def __init__(self, res, width):
+        super(SpatialBias, self).__init__()
+        self.bias = nn.Parameter(torch.zeros(1, width, res))
+
+    def forward(self, x):
+        x = x + self.bias
+        return x
+
+class Mod1(nn.Module):
     def __init__(self, modes, width):
-        super(FNO1d, self).__init__()
+        super(Mod1, self).__init__()
 
         """
         The overall network. It contains 4 layers of the Fourier layer.
@@ -74,11 +83,17 @@ class FNO1d(nn.Module):
         output: the solution of a later timestep
         output shape: (batchsize, x=s, c=1)
         """
-        self.name = "FNO1"
+        self.name = "Mod1"
         self.modes1 = modes
         self.width = width
         self.padding = 2 # pad the domain if input is non-periodic
-        self.fc0 = nn.Linear(nvars+1, self.width) # input channel is 4: (rho(x), u(x), p(x), x)
+        # self.fc0 = nn.Linear(nvars+1, self.width) # input channel is 4: (rho(x), u(x), p(x), x)
+        self.fc0 = nn.Conv1d(in_channels=nvars+1,
+                             out_channels=self.width,
+                             kernel_size=5,
+                             stride=1,
+                             padding='same',
+                            )
 
         self.conv0 = SpectralConv1d(self.width, self.width, self.modes1)
         self.conv1 = SpectralConv1d(self.width, self.width, self.modes1)
@@ -88,6 +103,10 @@ class FNO1d(nn.Module):
         self.w1 = nn.Conv1d(self.width, self.width, 1)
         self.w2 = nn.Conv1d(self.width, self.width, 1)
         self.w3 = nn.Conv1d(self.width, self.width, 1)
+        self.b0 = SpatialBias(128, self.width)
+        self.b1 = SpatialBias(128, self.width)
+        self.b2 = SpatialBias(128, self.width)
+        self.b3 = SpatialBias(128, self.width)
 
         self.fc1 = nn.Linear(self.width, 128)
         self.fc2 = nn.Linear(128, nvars)
@@ -95,29 +114,34 @@ class FNO1d(nn.Module):
     def forward(self, x):
         grid = self.get_grid(x.shape, x.device)
         x = torch.cat((x, grid), dim=-1)
+       
+        x = x.permute(0, 2, 1)
 
         x = self.fc0(x)
-        x = x.permute(0, 2, 1)
         # x = F.pad(x, [0,self.padding]) # pad the domain if input is non-periodic
 
         x1 = self.conv0(x)
         x2 = self.w0(x)
-        x = x1 + x2
+        x3 = self.b0(x)
+        x = x1 + x2 + x3
         x = F.gelu(x)
 
         x1 = self.conv1(x)
         x2 = self.w1(x)
-        x = x1 + x2
+        x3 = self.b1(x)
+        x = x1 + x2 + x3
         x = F.gelu(x)
 
         x1 = self.conv2(x)
         x2 = self.w2(x)
-        x = x1 + x2
+        x3 = self.b2(x)
+        x = x1 + x2 + x3
         x = F.gelu(x)
 
         x1 = self.conv3(x)
         x2 = self.w3(x)
-        x = x1 + x2
+        x3 = self.b3(x)
+        x = x1 + x2 + x3
 
         # x = x[..., :-self.padding] # pad the domain if input is non-periodic
         x = x.permute(0, 2, 1)
@@ -132,147 +156,3 @@ class FNO1d(nn.Module):
         gridx = torch.tensor(np.linspace(-10, 10, size_x), dtype=torch.float)   # change grid scale to problem data
         gridx = gridx.reshape(1, size_x, 1).repeat([batchsize, 1, 1])
         return gridx.to(device)
-
-# ################################################################
-# #  configurations
-# ################################################################
-# ntrain = 1000
-# ntest = 100
-nvars = 3  # three variables in the system of PDEs
-
-# grid_res = 2**10
-# sub = 2**3 #subsampling rate
-# h = grid_res // sub #total grid size divided by the subsampling rate
-# s = h
-
-# batch_size = 20
-# learning_rate = 0.001
-
-# epochs = 200
-# step_size = 50
-# gamma = 0.5
-
-# modes = 16
-# width = 64
-
-
-# ################################################################
-# # read data
-# ################################################################
-
-# # Data is of the shape (number of samples, grid size)
-# DATA_PATH = 'data/EulerData_not_in_structure.mat'
-# dataloader = MatReader(DATA_PATH)
-# x_data = dataloader.read_field('a')[:,::sub,:]  # index along variable dimension
-# y_data = dataloader.read_field('u')[:,::sub,:]
-
-
-# x_train = x_data[:ntrain,:,:]  # index along variable dimension
-# y_train = y_data[:ntrain,:,:]
-# x_test = x_data[-ntest:,:,:]
-# y_test = y_data[-ntest:,:,:]
-
-# # Normalize the data (might be wrong dimension...)
-# x_train = F.normalize(x_train, p=2.0, dim=1)  # normalize along spatial coordinates
-# y_train = F.normalize(y_train, p=2.0, dim=1)
-# x_test = F.normalize(x_test, p=2.0, dim=1)
-# y_test = F.normalize(y_test, p=2.0, dim=1)
-
-# # x_train = x_train.reshape(ntrain,s,1)
-# # x_test = x_test.reshape(ntest,s,1)
-
-# # HOKAJ: need to make sure shuffle is along axis 0
-# train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
-# test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=batch_size, shuffle=False)
-
-# # model
-# model = FNO1d(modes, width).cuda()
-# print("Model parameters: ", count_params(model))
-
-# ################################################################
-# # training and evaluation
-# ################################################################
-# optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-# scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
-
-# # save evaluation metrics
-# train_losses = np.zeros(epochs)
-# test_losses = np.zeros(epochs)
-
-
-# myloss = LpLoss(size_average=False)
-# for ep in range(epochs):
-#     model.train()
-#     t1 = default_timer()
-#     train_mse = 0
-#     train_l2 = 0
-#     for x, y in train_loader:
-#         x, y = x.cuda(), y.cuda()
-
-#         optimizer.zero_grad()
-#         out = model(x)
-
-#         mse = F.mse_loss(out.view(batch_size, -1), y.view(batch_size, -1), reduction='mean')
-#         l2 = myloss(out.view(batch_size, -1), y.view(batch_size, -1))
-#         l2.backward() # use the l2 relative loss
-
-#         optimizer.step()
-#         train_mse += mse.item()
-#         train_l2 += l2.item()
-
-#     scheduler.step()
-#     model.eval()
-#     test_l2 = 0.0
-#     with torch.no_grad():
-#         for x, y in test_loader:
-#             x, y = x.cuda(), y.cuda()
-
-#             out = model(x)
-#             test_l2 += myloss(out.view(batch_size, -1), y.view(batch_size, -1)).item()
-
-
-#     train_mse /= (nvars * len(train_loader))
-#     train_l2 /= (nvars * ntrain)
-#     test_l2 /= (nvars * ntrain)
-
-#     t2 = default_timer()
-#     print(ep, t2-t1, train_mse, train_l2, test_l2)
-#     # save performance metrics
-#     train_losses[ep] = train_l2
-#     test_losses[ep] = test_l2
-
-
-# # torch.save(model, 'model/ns_fourier_burgers')
-# pred = torch.zeros(y_test.shape)
-# index = 0
-# test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=1, shuffle=False)
-# with torch.no_grad():
-#     for x, y in test_loader:
-#         test_l2 = 0
-#         x, y = x.cuda(), y.cuda()
-
-#         out = model(x).view(s, nvars)   # drop unused first dimension
-#         pred[index] = out
-
-#         test_l2 += myloss(out.view(1, -1), y.view(1, -1)).item()
-#         # print(index, test_l2)
-#         index = index + 1
-
-# scipy.io.savemat(f'pred/euler_v2_{epochs}ep.mat', mdict={'y_hat': pred.cpu().numpy(),
-#                                                          'y'    : y_test.cpu().numpy(),
-#                                                          'x'    : x_test.cpu().numpy(),
-#                                                         })
-
-
-# ################################################################
-# # metrics and plots
-# ################################################################
-# plt.figure(1)
-# plt.plot(range(epochs), train_losses, label="Training Loss")
-# # plt.plot(range(epochs), test_losses, label="Test Loss")
-# plt.title(f"Training Loss with {epochs} Epochs")
-# plt.xlabel("Epoch")
-# plt.ylabel("Relative L2 Error")
-# plt.legend()
-# plt.show()
-# print(f"Done plotting {epochs}")

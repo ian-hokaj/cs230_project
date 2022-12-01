@@ -9,9 +9,7 @@ from functools import reduce
 from functools import partial
 
 #################################################
-#
 # Utilities
-#
 #################################################
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -95,6 +93,14 @@ class EulerNormalizer(object):
         self.upper_bounds = self.upper_bounds.cpu()
 
 
+# # L2 Relative Error
+# class L2Loss(object):
+#     def __init__(self):
+
+#     def __call__(self, x, y):
+
+
+    
 
 #loss function with rel/abs Lp loss
 class LpLoss(object):
@@ -209,6 +215,34 @@ class HsLoss(object):
             loss = loss / (k+1)
 
         return loss
+
+
+class SobolevLoss(object):
+    def __init__(self, h, lam):
+        self.p = 2
+        self.h = h      # grid spacing
+        self.lam = lam  # weighting gradient term 
+
+    def __call__(self, x, y):
+        N = x.shape[0]
+
+        norm = torch.linalg.norm(x - y, dim=1)
+        x = torch.reshape(x, (N, -1, 3))
+        y = torch.reshape(y, (N, -1, 3))
+
+        grad_x = (x[:, 2:, :] - 2*x[:, 1:-1, :] + x[:, :-2, :]) / self.h
+        grad_y = (y[:, 2:, :] - 2*y[:, 1:-1, :] + y[:, :-2, :]) / self.h
+        grad_x = torch.reshape(grad_x, (N, -1))
+        grad_y = grad_y.reshape(N, -1)
+        grad_norm = torch.linalg.norm(grad_x - grad_y, dim=1)
+
+        # x = torch.reshape(x, (N, -1))
+        # y = torch.reshape(y, (N, -1))
+        # norm = torch.linalg.norm(x - y, dim=1)
+
+        loss = torch.sum(torch.square(norm) + self.lam * torch.square(grad_norm))
+        return loss
+
 
 # A simple feedforward neural network
 class DenseNet(torch.nn.Module):
