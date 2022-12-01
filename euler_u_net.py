@@ -80,16 +80,19 @@ class Decoder(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, encoder_channels, decoder_channels):
+    def __init__(self, encoder_channels=(3,64,128,256,512,1024), decoder_channels=(1024, 512, 256, 128, 64)):
         super(UNet, self).__init__()
+        self.name = "UNet"
         self.encoder = Encoder(encoder_channels)
         self.decoder = Decoder(decoder_channels)
         self.final_conv = nn.Conv1d(decoder_channels[-1], 3, 1)
 
     def forward(self, x):
+        x = x.permute(0, 2, 1)  # convolve on spatial dimension
         encoder_outputs = self.encoder(x)
         x = self.decoder(encoder_outputs[-1], encoder_outputs[::-1][1:])
         x = self.final_conv(x)
+        x = x.permute(0, 2, 1)
         return x
 
 # TESTING
@@ -122,132 +125,3 @@ class UNet(nn.Module):
 # x    = torch.randn(1, 3, 1024)
 # unet(x).shape
 
-
-
-################################################################
-#  configurations
-################################################################
-ntrain = 100
-ntest = 10
-nvars = 3  # three variables in the system of PDEs
-
-grid_res = 2**10
-sub = 2**1 #subsampling rate
-h = grid_res // sub #total grid size divided by the subsampling rate
-s = h
-
-batch_size = 20
-learning_rate = 0.001
-
-epochs = 50
-step_size = 50
-gamma = 0.5
-
-modes = 16
-width = 64
-
-
-################################################################
-# read data
-################################################################
-
-DATA_PATH = 'data/EulerData_not_in_structure.mat'
-dataloader = MatReader(DATA_PATH)
-x_data = dataloader.read_field('a')[:,::sub,:]  # index along variable dimension
-y_data = dataloader.read_field('u')[:,::sub,:]
-
-
-x_train = x_data[:ntrain,:,:]  # index along variable dimension
-y_train = y_data[:ntrain,:,:]
-x_test = x_data[-ntest:,:,:]
-y_test = y_data[-ntest:,:,:]
-
-# Normalize the data (might be wrong dimension...)
-x_train = F.normalize(x_train, p=2.0, dim=1)  # normalize along spatial coordinates
-y_train = F.normalize(y_train, p=2.0, dim=1)
-x_test = F.normalize(x_test, p=2.0, dim=1)
-y_test = F.normalize(y_test, p=2.0, dim=1)
-
-# Swap dimensions for convolusion to occur along spatial dimension (-1)
-x_train = x_train.reshape(ntrain, nvars, s)
-x_test = x_test.reshape(ntest, nvars, s)
-y_train = y_train.reshape(ntrain, nvars, s)
-y_test = y_test.reshape(ntest, nvars, s)
-
-# HOKAJ: need to make sure shuffle is along axis 0
-train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
-test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=batch_size, shuffle=False)
-
-# model
-model = UNet(encoder_channels=(3,64,128,256,512,1024), decoder_channels=(1024, 512, 256, 128, 64)).cuda()
-print("Model parameters: ", count_params(model))
-
-
-################################################################
-# training and evaluation
-################################################################
-optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
-
-# save evaluation metrics
-train_losses = np.zeros(epochs)
-test_losses = np.zeros(epochs)
-
-
-myloss = LpLoss(size_average=False)
-for ep in range(epochs):
-    model.train()
-    t1 = default_timer()
-    train_mse = 0
-    train_l2 = 0
-    for x, y in train_loader:
-        x, y = x.cuda(), y.cuda()
-
-        optimizer.zero_grad()
-        out = model(x)
-
-        mse = F.mse_loss(out.view(batch_size, -1), y.view(batch_size, -1), reduction='mean')
-        l2 = myloss(out.view(batch_size, -1), y.view(batch_size, -1))
-        l2.backward() # use the l2 relative loss
-
-        optimizer.step()
-        train_mse += mse.item()
-        train_l2 += l2.item()
-
-    scheduler.step()
-    model.eval()
-    test_l2 = 0.0
-    with torch.no_grad():
-        for x, y in test_loader:
-            x, y = x.cuda(), y.cuda()
-
-            out = model(x)
-            test_l2 += myloss(out.view(batch_size, -1), y.view(batch_size, -1)).item()
-
-
-    train_mse /= (nvars * len(train_loader))
-    train_l2 /= (nvars * ntrain)
-    test_l2 /= (nvars * ntrain)
-
-    t2 = default_timer()
-    print(ep, t2-t1, train_mse, train_l2, test_l2)
-    # save performance metrics
-    train_losses[ep] = train_l2
-    test_losses[ep] = test_l2
-
-
-# torch.save(model, 'model/ns_fourier_burgers')
-pred = torch.zeros(y_test.shape)
-index = 0
-test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=1, shuffle=False)
-with torch.no_grad():
-    for x, y in test_loader:
-        test_l2 = 0
-        x, y = x.cuda(), y.cuda()
-
-        out = model(x).view(nvars, s)   # drop unused first dimension
-        pred[index] = out
-
-        test_l2 += myloss(out.view(1, -1), y.view(1, -1)).item()
-        print(index, test_l2)
-        index = index + 1
