@@ -13,3 +13,6 @@ In this project we attempt to use a Fourier Neural Operator to Resolve Shock Con
 - [x] Sobolev norm loss function
 - [x] U-net for baseline comparison
 - [x] File cleanup & Code refactor
+- [x] Increased resolution testing framework
+- [x] Add learning rate scheduler
+- [ ] Run on high res data

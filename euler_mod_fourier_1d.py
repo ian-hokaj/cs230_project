@@ -84,11 +84,12 @@ class Mod1(nn.Module):
         output shape: (batchsize, x=s, c=1)
         """
         self.name = "Mod1"
+        self.nvars = 3
         self.modes1 = modes
         self.width = width
         self.padding = 2 # pad the domain if input is non-periodic
         # self.fc0 = nn.Linear(nvars+1, self.width) # input channel is 4: (rho(x), u(x), p(x), x)
-        self.fc0 = nn.Conv1d(in_channels=nvars+1,
+        self.fc0 = nn.Conv1d(in_channels=self.nvars+1,
                              out_channels=self.width,
                              kernel_size=5,
                              stride=1,
@@ -109,7 +110,7 @@ class Mod1(nn.Module):
         self.b3 = SpatialBias(128, self.width)
 
         self.fc1 = nn.Linear(self.width, 128)
-        self.fc2 = nn.Linear(128, nvars)
+        self.fc2 = nn.Linear(128, self.nvars)
 
     def forward(self, x):
         grid = self.get_grid(x.shape, x.device)
@@ -156,3 +157,4 @@ class Mod1(nn.Module):
         gridx = torch.tensor(np.linspace(-10, 10, size_x), dtype=torch.float)   # change grid scale to problem data
         gridx = gridx.reshape(1, size_x, 1).repeat([batchsize, 1, 1])
         return gridx.to(device)
+

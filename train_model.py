@@ -7,6 +7,7 @@ from timeit import default_timer
 from euler_fourier_1d import FNO1d
 from euler_mod_fourier_1d import Mod1
 from euler_u_net import UNet
+from config_train import *
 from utilities3 import *
 from Adam import Adam
 
@@ -14,36 +15,6 @@ from Adam import Adam
 torch.manual_seed(0)
 np.random.seed(0)
 
-################################################################
-#  configurations
-################################################################
-which_model = "FNO1"  # ['FNO1', 'UNet', 'Mod1']
-which_loss = "L2"  # ('L1', 'L2', 'Sobolev')
-
-ntrain = 1000
-ntest = 100
-nvars = 3  # three variables in the system of PDEs
-
-R = 10
-grid_res = 2**R
-sub = 2**3 #subsampling rate
-h = grid_res // sub #total grid size divided by the subsampling rate
-s = h
-
-# FNO model parameters
-modes = 16
-width = 64
-
-# Optimizer and Schedule hyperparameters
-epochs = 500
-batch_size = 20
-learning_rate = 0.0001
-step_size = 50
-gamma = 0.5
-weight_decay=1e-4
-
-
-#######################################################################
 
 # Select model
 if which_model == 'FNO1':
@@ -53,16 +24,16 @@ elif which_model == 'UNet':
 elif which_model == 'Mod1':
     model = Mod1(modes, width).cuda()
 else:
-    print(f"Model {model} is not a valid selection")
+    print(f"Model {which_model} is not a valid selection")
     exit()
 
 # Select loss
 if which_loss == "L1":
-    loss = nn.L1Loss(reduction='sum')
+    loss = nn.L1Loss(reduction='mean')
 elif which_loss == "L2":
-    loss = nn.MSELoss(reduction='sum')
+    loss = nn.MSELoss(reduction='mean')
 elif which_loss == "Sobolev":
-    loss = SobolevLoss(h=20/s, lam=1)  # grid is (-10, 10) with s points
+    loss = SobolevLoss(h=20/s, lam=10)  # grid is (-10, 10) with s points
 else:
     print(f"Loss {which_loss} is not a valid selection")
     exit()
@@ -74,8 +45,8 @@ print("Model parameters; ", count_params(model))
 
 path = f'euler_{which_model}_{which_loss}_sub{sub}_ep{epochs}_b{batch_size}_lr{learning_rate}_g{gamma}'
 path_model = 'model/' + path
-path_pred = 'pred/' + path
-path_plot = 'pred/' + path
+path_pred = 'pred/' + path + '.mat'
+# path_plot = 'pred/' + path
 
 ######################################################################
 # load & preprocess data
@@ -113,6 +84,7 @@ test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test,
 
 
 # save evaluation metrics
+train_mses = np.zeros(epochs)
 train_losses = np.zeros(epochs)
 test_losses = np.zeros(epochs)
 
@@ -128,9 +100,9 @@ for ep in range(epochs):
         optimizer.zero_grad()
         out = model(x)
 
-        mse = F.mse_loss(out.view(batch_size, -1), y.view(batch_size, -1), reduction='mean')
+        mse = F.mse_loss(out.contiguous().view(batch_size, -1), y.contiguous().view(batch_size, -1), reduction='mean')
         batch_loss = loss(out.contiguous().view(batch_size, -1), y.contiguous().view(batch_size, -1))
-        batch_loss.backward() # use the l2 relative loss
+        batch_loss.backward()
 
         optimizer.step()
         train_mse += mse.item()
@@ -146,14 +118,16 @@ for ep in range(epochs):
             out = model(x)
             test_loss += loss(out.contiguous().view(batch_size, -1), y.contiguous().view(batch_size, -1)).item()
 
+    # Average because they have 'sum' reduction, so losses summed over batch
     train_mse /= (len(train_loader))
-    train_loss /= (ntrain * s * nvars)
-    test_loss /= (ntrain * s * nvars)
+    train_loss /= len(train_loader)
+    test_loss /= len(test_loader)#(ntrain * s * nvars)
 
     t2 = default_timer()
     print(ep, t2-t1, train_mse, train_loss, test_loss)
 
     # save performance metrics
+    train_mses[ep] = train_mse
     train_losses[ep] = train_loss
     test_losses[ep] = test_loss
 
@@ -183,8 +157,11 @@ with torch.no_grad():
 save_flag = input("Save predictions? (y/n): ")
 if save_flag == 'y':    
     scipy.io.savemat(path_pred, mdict={'y_hat': pred.cpu().numpy(),
-                                                             'y'    : y_test.cpu().numpy(),
-                                                             'x'    : x_test.cpu().numpy(),
-                                                            })
+                                       'y'    : y_test.cpu().numpy(),
+                                       'x'    : x_test.cpu().numpy(),
+                                       'train_mses': train_mses,
+                                       'train_losses': train_losses,
+                                       'test_losses': test_losses,
+                                      })
     print("Predictions saved as: ", path_pred)
 

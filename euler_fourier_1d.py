@@ -75,10 +75,11 @@ class FNO1d(nn.Module):
         output shape: (batchsize, x=s, c=1)
         """
         self.name = "FNO1"
+        self.nvars = 3
         self.modes1 = modes
         self.width = width
         self.padding = 2 # pad the domain if input is non-periodic
-        self.fc0 = nn.Linear(nvars+1, self.width) # input channel is 4: (rho(x), u(x), p(x), x)
+        self.fc0 = nn.Linear(self.nvars+1, self.width) # input channel is 4: (rho(x), u(x), p(x), x)
 
         self.conv0 = SpectralConv1d(self.width, self.width, self.modes1)
         self.conv1 = SpectralConv1d(self.width, self.width, self.modes1)
@@ -90,7 +91,7 @@ class FNO1d(nn.Module):
         self.w3 = nn.Conv1d(self.width, self.width, 1)
 
         self.fc1 = nn.Linear(self.width, 128)
-        self.fc2 = nn.Linear(128, nvars)
+        self.fc2 = nn.Linear(128, self.nvars)
 
     def forward(self, x):
         grid = self.get_grid(x.shape, x.device)
@@ -132,3 +133,4 @@ class FNO1d(nn.Module):
         gridx = torch.tensor(np.linspace(-10, 10, size_x), dtype=torch.float)   # change grid scale to problem data
         gridx = gridx.reshape(1, size_x, 1).repeat([batchsize, 1, 1])
         return gridx.to(device)
+
