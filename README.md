@@ -10,10 +10,11 @@ In this project we attempt to use a Fourier Neural Operator to Resolve Shock Con
 - [x] Implement decoder for output rescaling
 - [ ] Parallel Fourier channels for different variables
 - [ ] Hyperparameter exploration
+    - Seems lr=0.001, scheduler=100, gamma=0.5 works well
 - [x] Sobolev norm loss function
 - [x] U-net for baseline comparison
 - [x] File cleanup & Code refactor
 - [x] Increased resolution testing framework
 - [x] Add learning rate scheduler
-- [ ] Run on high res data
+- [x] Run on high res data
 - [ ] Num parameters, time per epoch for all

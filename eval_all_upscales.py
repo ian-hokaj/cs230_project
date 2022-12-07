@@ -1,16 +1,16 @@
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-from euler_fourier_1d import FNO1d
-from euler_mod_fourier_1d import Mod1
-from euler_u_net import UNet
-from utilities3 import *
+from scripts.euler_fourier_1d import FNO1d
+from scripts.euler_mod_fourier_1d import Mod1
+from scripts.euler_u_net import UNet
+from scripts.utilities import *
 
 ################################################################
 #  Load Configurations
 ################################################################
 # Set configurations in config_eval.py
-from config_all_upscales import *
+from configs.config_all_upscales import *
 
 # Initialize script outputs
 output_models = []
@@ -48,7 +48,7 @@ for which_model in which_models:
             elif which_loss == "L2":
                 loss = nn.MSELoss(reduction='mean')
             elif which_loss == "Sobolev":
-                loss = SobolevLoss(h=20/s, lam=1)  # grid is (-10, 10) with s points
+                loss = SobolevLoss(h=20/s, lam=lam)  # grid is (-10, 10) with s points
             else:
                 print(f"Loss {which_loss} is not a valid selection")
                 exit()
@@ -116,14 +116,12 @@ for which_model in which_models:
 
             output_models.append(which_model)
             output_losses.append(which_loss)
-            # output_subs.append(sub)
             output_upscale_subs.append(upscale_sub)
             output_upscale_avg_losses.append(batch_loss / ntest)
-            output_upscale_avg_mses.append(batch_loss / ntest)
+            output_upscale_avg_mses.append(batch_mse / ntest)
 
 scipy.io.savemat(path_eval_upscales, mdict={'models': output_models,
                                             'losses': output_losses,
-                                            # 'subs': output_subs,
                                             'upscale_subs': output_upscale_subs,
                                             'upscale_avg_losses': output_upscale_avg_losses,
                                             'upscale_avg_mses': output_upscale_avg_mses,

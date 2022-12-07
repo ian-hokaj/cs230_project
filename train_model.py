@@ -1,19 +1,19 @@
-# import numpy as np
+import numpy as np
 import torch
 # import torch.nn as nn
 import torch.nn.functional as F
 from timeit import default_timer
 
-from euler_fourier_1d import FNO1d
-from euler_mod_fourier_1d import Mod1
-from euler_u_net import UNet
-from config_train import *
-from utilities3 import *
-from Adam import Adam
+from scripts.euler_fourier_1d import FNO1d
+from scripts.euler_mod_fourier_1d import Mod1
+from scripts.euler_u_net import UNet
+from configs.config_train import *
+from scripts.utilities import *
+from scripts.Adam import Adam
 
 
-torch.manual_seed(0)
-np.random.seed(0)
+# torch.manual_seed(0)
+# np.random.seed(0)
 
 
 # Select model
@@ -33,7 +33,7 @@ if which_loss == "L1":
 elif which_loss == "L2":
     loss = nn.MSELoss(reduction='mean')
 elif which_loss == "Sobolev":
-    loss = SobolevLoss(h=20/s, lam=10)  # grid is (-10, 10) with s points
+    loss = SobolevLoss(h=20/s, lam=lam)  # grid is (-10, 10) with s points
 else:
     print(f"Loss {which_loss} is not a valid selection")
     exit()
@@ -60,7 +60,6 @@ x_train = x_data[:ntrain,:,:]  # index along variable dimension
 y_train = y_data[:ntrain,:,:]
 x_test = x_data[-ntest:,:,:]
 y_test = y_data[-ntest:,:,:]
-# print(x_train.shape)
 
 # Normalize the data (might be wrong dimension...)
 x_normalizer = EulerNormalizer(x_train)
@@ -81,15 +80,12 @@ test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test,
 # ################################################################
 # # training and evaluation
 # ################################################################
-
-
-
 # save evaluation metrics
 train_mses = np.zeros(epochs)
 train_losses = np.zeros(epochs)
 test_losses = np.zeros(epochs)
 
-
+# Training (through epochs in batches)
 for ep in range(epochs):
     model.train()
     t1 = default_timer()
@@ -100,7 +96,6 @@ for ep in range(epochs):
 
         optimizer.zero_grad()
         out = model(x)
-        print(out.shape)
 
         mse = F.mse_loss(out.contiguous().view(batch_size, -1), y.contiguous().view(batch_size, -1), reduction='mean')
         batch_loss = loss(out.contiguous().view(batch_size, -1), y.contiguous().view(batch_size, -1))

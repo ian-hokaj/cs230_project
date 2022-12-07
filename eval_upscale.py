@@ -1,16 +1,16 @@
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-from euler_fourier_1d import FNO1d
-from euler_mod_fourier_1d import Mod1
-from euler_u_net import UNet
-from utilities3 import *
+from scripts.euler_fourier_1d import FNO1d
+from scripts.euler_mod_fourier_1d import Mod1
+from scripts.euler_u_net import UNet
+from scripts.utilities import *
 
 ################################################################
 #  Load Configurations
 ################################################################
 # Set configurations in config_eval.py
-from config_eval import *
+from configs.config_eval import *
 
 # Select model
 if which_model == 'FNO1':

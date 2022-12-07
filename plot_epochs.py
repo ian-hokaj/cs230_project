@@ -2,13 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io
 
-from utilities3 import MatReader
+from scripts.utilities import MatReader
 
 
 ################################################################
 # configs
 ################################################################
-from config_eval import *
+from configs.config_eval import *
 
 path = f'euler_{which_model}_{which_loss}_sub{sub}_ep{epochs}_b{batch_size}_lr{learning_rate}_g{gamma}'
 path_pred = 'pred/'+path+'.mat'

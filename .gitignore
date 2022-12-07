@@ -1,5 +1,5 @@
 data/
 pred/
-model/
-plots/
+# model/
+# plots/
 eval/
