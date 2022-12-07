@@ -1,16 +1,16 @@
 ################################################################
 #  configurations
 ################################################################
-which_model = "UNet"  # ['FNO1', 'UNet', 'Mod1']
-which_loss = "Sobolev"  # ('L1', 'L2', 'Sobolev')
+which_model = "FNO1"  # ['FNO1', 'UNet', 'Mod1']
+which_loss = "L2"  # ('L1', 'L2', 'Sobolev')
 
 ntrain = 1000
 ntest = 100
 nvars = 3  # three variables in the system of PDEs
 
-R = 10
+R = 13
 grid_res = 2**R
-sub = 2**3 #subsampling rate
+sub = 2**5 #subsampling rate
 h = grid_res // sub #total grid size divided by the subsampling rate
 s = h
 

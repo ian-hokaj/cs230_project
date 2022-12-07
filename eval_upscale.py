@@ -35,9 +35,9 @@ else:
     exit()
 
 # Get filepaths from hyperparameters
-TRAIN_PATH = "data/EulerData_not_in_structure.mat"
+TRAIN_PATH = f"data/EulerData_R{R}.mat"
 TEST_PATH = TRAIN_PATH
-path = f'euler_{which_model}_{which_loss}_sub{sub}_ep{epochs}_b{batch_size}_lr{learning_rate}_g{gamma}'
+path = f'euler_R{R}_{which_model}_{which_loss}_sub{sub}_ep{epochs}_b{batch_size}_lr{learning_rate}_g{gamma}'
 path_model = 'model/' + path
 path_pred = 'pred/' + path + '.mat'
 path_eval = 'eval/' + f'upscale{upscale_sub}_' + path + '.mat'

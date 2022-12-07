@@ -16,3 +16,4 @@ In this project we attempt to use a Fourier Neural Operator to Resolve Shock Con
 - [x] Increased resolution testing framework
 - [x] Add learning rate scheduler
 - [ ] Run on high res data
+- [ ] Num parameters, time per epoch for all

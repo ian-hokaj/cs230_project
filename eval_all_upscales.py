@@ -20,7 +20,7 @@ output_upscale_subs = []
 output_upscale_avg_losses = []
 output_upscale_avg_mses = []
 
-path_eval_upscales = f'euler_sub{sub}_ep{epochs}_b{batch_size}_lr{learning_rate}_g{gamma}'
+path_eval_upscales = f'euler_R{R}_sub{sub}_ep{epochs}_b{batch_size}_lr{learning_rate}_g{gamma}'
 path_eval_upscales = 'eval/all_upscales/' + path_eval_upscales + '.mat'
 
 for which_model in which_models:
@@ -35,32 +35,34 @@ for which_model in which_models:
         print(f"Model {which_model} is not a valid selection")
         exit()
 
-    for which_loss in which_losses:
-        # Select loss
-        if which_loss == "L1":
-            loss = nn.L1Loss(reduction='mean')
-        elif which_loss == "L2":
-            loss = nn.MSELoss(reduction='mean')
-        elif which_loss == "Sobolev":
-            loss = SobolevLoss(h=20/s, lam=1)  # grid is (-10, 10) with s points
-        else:
-            print(f"Loss {which_loss} is not a valid selection")
-            exit()
+    
 
-        # Get filepaths from hyperparameters
-        TRAIN_PATH = "data/EulerData_not_in_structure.mat"
-        TEST_PATH = TRAIN_PATH
-        path = f'euler_{which_model}_{which_loss}_sub{sub}_ep{epochs}_b{batch_size}_lr{learning_rate}_g{gamma}'
-        path_model = 'model/' + path
-        path_pred = 'pred/' + path + '.mat'
+    # Iterate through increasing subsampling resolutions and test accuracy
+    for upscale_sub in upscale_subs:
+        s = grid_res // upscale_sub  # necessary for sobolev loss
 
-        # Load model from file
-        model = torch.load(path_model)
-        # print(model.count_params())
+        for which_loss in which_losses:
+            # Select loss
+            if which_loss == "L1":
+                loss = nn.L1Loss(reduction='mean')
+            elif which_loss == "L2":
+                loss = nn.MSELoss(reduction='mean')
+            elif which_loss == "Sobolev":
+                loss = SobolevLoss(h=20/s, lam=1)  # grid is (-10, 10) with s points
+            else:
+                print(f"Loss {which_loss} is not a valid selection")
+                exit()
 
-        # Iterate through increasing subsampling resolutions and test accuracy
-        for upscale_sub in upscale_subs:
-            # path_eval = 'eval/' + f'upscale{upscale_sub}_' + path + '.mat'
+            # Get filepaths from hyperparameters
+            TRAIN_PATH = f"data/EulerData_R{R}"
+            TEST_PATH = TRAIN_PATH
+            path = f'euler_R{R}_{which_model}_{which_loss}_sub{sub}_ep{epochs}_b{batch_size}_lr{learning_rate}_g{gamma}'
+            path_model = 'model/' + path
+            path_pred = 'pred/' + path + '.mat'
+
+            # Load model from file
+            model = torch.load(path_model)
+            # print(model.count_params())
 
             # Load the data
             dataloader = MatReader(TEST_PATH)

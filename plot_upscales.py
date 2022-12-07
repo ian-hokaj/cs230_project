@@ -21,7 +21,8 @@ upscale_subs = mat['upscale_subs'][0]
 upscale_avg_losses = mat['upscale_avg_losses'][0]
 upscale_avg_mses = mat['upscale_avg_mses'][0]
 
-print(upscale_avg_mses[0])
+print(models)
+print(losses)
 # Build dictionary of logical parameters
 reformat = {}
 for which_model in which_models:
@@ -29,8 +30,10 @@ for which_model in which_models:
     for which_loss in which_losses:
         reformat[which_model][which_loss] = [[],[]]
 for i in range(len(models)):
-    reformat[models[i]][losses[i]][0].append(upscale_subs[i])
-    reformat[models[i]][losses[i]][1].append(upscale_avg_mses[i])
+    model = models[i].strip()
+    loss = losses[i].strip()  #remove white space bug
+    reformat[model][loss][0].append(upscale_subs[i])
+    reformat[model][loss][1].append(upscale_avg_mses[i])
 
 
 for which_model in which_models:

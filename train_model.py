@@ -43,7 +43,7 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamm
 print("Model selected: ", model.name)
 print("Model parameters; ", count_params(model))
 
-path = f'euler_{which_model}_{which_loss}_sub{sub}_ep{epochs}_b{batch_size}_lr{learning_rate}_g{gamma}'
+path = f'euler_R{R}_{which_model}_{which_loss}_sub{sub}_ep{epochs}_b{batch_size}_lr{learning_rate}_g{gamma}'
 path_model = 'model/' + path
 path_pred = 'pred/' + path + '.mat'
 # path_plot = 'pred/' + path
@@ -51,7 +51,7 @@ path_pred = 'pred/' + path + '.mat'
 ######################################################################
 # load & preprocess data
 ######################################################################
-DATA_PATH = 'data/EulerData_not_in_structure.mat'
+DATA_PATH = f'data/EulerData_R{R}.mat'
 dataloader = MatReader(DATA_PATH)
 x_data = dataloader.read_field('a')[:,::sub,:]  # index along variable dimension
 y_data = dataloader.read_field('u')[:,::sub,:]
@@ -60,6 +60,7 @@ x_train = x_data[:ntrain,:,:]  # index along variable dimension
 y_train = y_data[:ntrain,:,:]
 x_test = x_data[-ntest:,:,:]
 y_test = y_data[-ntest:,:,:]
+# print(x_train.shape)
 
 # Normalize the data (might be wrong dimension...)
 x_normalizer = EulerNormalizer(x_train)
@@ -99,6 +100,7 @@ for ep in range(epochs):
 
         optimizer.zero_grad()
         out = model(x)
+        print(out.shape)
 
         mse = F.mse_loss(out.contiguous().view(batch_size, -1), y.contiguous().view(batch_size, -1), reduction='mean')
         batch_loss = loss(out.contiguous().view(batch_size, -1), y.contiguous().view(batch_size, -1))
