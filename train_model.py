@@ -81,11 +81,14 @@ test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test,
 # # training and evaluation
 # ################################################################
 # save evaluation metrics
-train_mses = np.zeros(epochs)
 train_losses = np.zeros(epochs)
 test_losses = np.zeros(epochs)
+train_mses = np.zeros(epochs)
+test_mses = np.zeros(epochs)
+train_time = 0
 
 # Training (through epochs in batches)
+t_start = default_timer()
 for ep in range(epochs):
     model.train()
     t1 = default_timer()
@@ -108,17 +111,21 @@ for ep in range(epochs):
     scheduler.step()
     model.eval()
     test_loss = 0.0
+    test_mse = 0.0
     with torch.no_grad():
         for x, y in test_loader:
             x, y = x.cuda(), y.cuda()
 
             out = model(x)
+            test_mse += F.mse_loss(out.contiguous().view(batch_size, -1), y.contiguous().view(batch_size, -1), reduction='mean').item()
             test_loss += loss(out.contiguous().view(batch_size, -1), y.contiguous().view(batch_size, -1)).item()
 
     # Average because they have 'sum' reduction, so losses summed over batch
     train_mse /= (len(train_loader))
     train_loss /= len(train_loader)
     test_loss /= len(test_loader)#(ntrain * s * nvars)
+    test_mse /= len(test_loader)
+
 
     t2 = default_timer()
     print(ep, t2-t1, train_mse, train_loss, test_loss)
@@ -127,7 +134,9 @@ for ep in range(epochs):
     train_mses[ep] = train_mse
     train_losses[ep] = train_loss
     test_losses[ep] = test_loss
+    test_mses[ep] = test_mse
 
+t_end = default_timer()
 save_flag = input("Save model? (y/n): ")
 if save_flag == 'y':
     torch.save(model, path_model)
@@ -137,6 +146,7 @@ pred = torch.zeros(y_test.shape)
 index = 0
 test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=1, shuffle=False)
 with torch.no_grad():
+    test_mse = 0
     for x, y in test_loader:
         test_loss = 0
         x, y = x.cuda(), y.cuda()
@@ -144,6 +154,7 @@ with torch.no_grad():
         out = model(x).contiguous().view(s, nvars)   # drop unused first dimension
 
         test_loss += loss(out.contiguous().view(1, -1), y.contiguous().view(1, -1)).item()
+        test_mse += F.mse_loss(out.contiguous().view(1, -1), y.contiguous().view(1, -1), reduction='mean').item()
         print(index, test_loss)
 
         out = y_normalizer.decode(out)
@@ -151,14 +162,20 @@ with torch.no_grad():
 
         index = index + 1
 
+avg_test_mse = test_mse / len(test_loader)
+
 save_flag = input("Save predictions? (y/n): ")
 if save_flag == 'y':    
     scipy.io.savemat(path_pred, mdict={'y_hat': pred.cpu().numpy(),
                                        'y'    : y_test.cpu().numpy(),
                                        'x'    : x_test.cpu().numpy(),
-                                       'train_mses': train_mses,
                                        'train_losses': train_losses,
+                                       'train_mses': train_mses,
                                        'test_losses': test_losses,
+                                       'test_mses': test_mses,
+                                       'avg_test_mse': avg_test_mse,
+                                       'train_time': t_end - t_start,
+                                       'avg_train_time': (t_end - t_start) / epochs,
                                       })
     print("Predictions saved as: ", path_pred)
 

@@ -61,6 +61,8 @@ class SpatialBias(nn.Module):
         self.bias = nn.Parameter(torch.zeros(1, width, res))
 
     def forward(self, x):
+        # print("x: ", x.shape)
+        # print("bias: ", self.bias.shape)
         x = x + self.bias
         return x
 
@@ -101,10 +103,10 @@ class Mod1(nn.Module):
         self.w1 = nn.Conv1d(self.width, self.width, 1)
         self.w2 = nn.Conv1d(self.width, self.width, 1)
         self.w3 = nn.Conv1d(self.width, self.width, 1)
-        self.b0 = SpatialBias(128, self.width)
-        self.b1 = SpatialBias(128, self.width)
-        self.b2 = SpatialBias(128, self.width)
-        self.b3 = SpatialBias(128, self.width)
+        self.b0 = SpatialBias(256, self.width)
+        self.b1 = SpatialBias(256, self.width)
+        self.b2 = SpatialBias(256, self.width)
+        self.b3 = SpatialBias(256, self.width)
 
         self.fc1 = nn.Linear(self.width, 128)
         self.fc2 = nn.Linear(128, self.nvars)

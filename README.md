@@ -18,3 +18,13 @@ In this project we attempt to use a Fourier Neural Operator to Resolve Shock Con
 - [x] Add learning rate scheduler
 - [x] Run on high res data
 - [ ] Num parameters, time per epoch for all
+
+
+Final Tests:
+- [ ] Fix mod network
+- [ ] Alpha: 0.0001, 0.001, 0.01
+- [ ] Batch size: 5, 10, 20, 50
+- [ ] Get test MSE, train time per epoch
+- [ ] Lambda search: don't show
+- [ ] Upscaling with 2 networks again
+
