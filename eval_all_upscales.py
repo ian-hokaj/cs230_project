@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scripts.euler_fourier_1d import FNO1d
 from scripts.euler_mod_fourier_1d import Mod1
 from scripts.euler_u_net import UNet
+# from euler_u_net import UNet
 from scripts.utilities import *
 
 ################################################################
@@ -61,6 +62,7 @@ for which_model in which_models:
             path_pred = 'pred/' + path + '.mat'
 
             # Load model from file
+            print("Loading model: ", path_model)
             model = torch.load(path_model)
             # print(model.count_params())
 

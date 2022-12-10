@@ -21,10 +21,11 @@ In this project we attempt to use a Fourier Neural Operator to Resolve Shock Con
 
 
 Final Tests:
-- [ ] Fix mod network
-- [ ] Alpha: 0.0001, 0.001, 0.01
-- [ ] Batch size: 5, 10, 20, 50
-- [ ] Get test MSE, train time per epoch
-- [ ] Lambda search: don't show
-- [ ] Upscaling with 2 networks again
+- [x] Fix mod network
+- [x] Alpha: 0.0001, 0.001, 0.01
+- [x] Batch size: 5, 10, 20, 50
+- [x] Get test MSE, train time per epoch
+- [x] Lambda search
+- [ ] Upscaling with different networks
+- [ ] Upscaling with different losses
 

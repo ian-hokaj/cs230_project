@@ -2,7 +2,7 @@
 #  configurations
 ################################################################
 which_model = "Mod1"  # ['FNO1', 'UNet', 'Mod1']
-which_loss = "L2"  # ('L1', 'L2', 'Sobolev')
+which_loss = "Sobolev"  # ('L1', 'L2', 'Sobolev')
 
 ntrain = 1000
 ntest = 100
@@ -19,12 +19,12 @@ modes = 16
 width = 64
 
 # Loss function parameters
-lam = 0.01  # sobolev: weighting on gradient norm
+lam = 0.000  # sobolev: weighting on gradient norm
 
 # Optimizer and Schedule hyperparameters
 epochs = 500
 batch_size = 20
-learning_rate = 0.005
+learning_rate = 0.001
 step_size = 50
 gamma = 0.5
 weight_decay=1e-4

@@ -43,7 +43,8 @@ for which_model in which_models:
 
 # ax = plt.axes()
 # ax.set_xticks([R - math.log(upscale_subs[i], 2) for i in range(len(models))])
-plt.title(f'Test MSE on Upscaled FNO Grid/Input')
+plt.title(f'Loss Function Perfomrance Comparison on Upscaled Grid')
+# plt.yscale('log')
 plt.xlabel('Grid Resolution')
 plt.ylabel('Average MSE')
 plt.legend()

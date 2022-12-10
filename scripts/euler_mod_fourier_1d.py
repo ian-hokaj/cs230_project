@@ -61,9 +61,13 @@ class SpatialBias(nn.Module):
         self.bias = nn.Parameter(torch.zeros(1, width, res))
 
     def forward(self, x):
-        # print("x: ", x.shape)
-        # print("bias: ", self.bias.shape)
-        x = x + self.bias
+        # Uncomment for evaluation (for interpolating bias when upscaling)
+        scale_factor = x.shape[-1] // self.bias.shape[-1]
+        for i in range(scale_factor):
+            x[:,:,i::scale_factor] = x[:,:,i::scale_factor] + self.bias
+
+        # Uncomment for training
+        # x = x + self.bias
         return x
 
 class Mod1(nn.Module):

@@ -1,8 +1,8 @@
 ################################################################
 #  configurations
 ################################################################
-which_models = ['FNO1']  # ['FNO1', 'UNet', 'Mod1']
-which_losses = ["L1", "L2", "Sobolev"]  # ('L1', 'L2', 'Sobolev')
+which_models = ['Mod1']  # ['FNO1', 'UNet', 'Mod1']
+which_losses = ["L2", 'L1', 'Sobolev']  # ('L1', 'L2', 'Sobolev')
 
 # Data parameters
 ntrain = 1000
@@ -14,7 +14,7 @@ upscale_subs = [2**5, 2**4, 2**3, 2**2, 2**1, 2**0]
 # training hyperparameters
 epochs = 500
 batch_size = 20
-learning_rate = 0.001
+learning_rate = 0.005
 gamma = 0.5
 
 # FNO model parameters
@@ -22,7 +22,7 @@ modes = 16
 width = 64
 
 # Loss function parameters
-lam = 0.1  # sobolev: weighting on gradient norm
+lam = 0.01  # sobolev: weighting on gradient norm
 
 nvars = 3
 grid_res = 2**R
