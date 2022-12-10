@@ -22,12 +22,12 @@ train_l2s = mat['train_mses'][0]
 test_l2s = mat['test_mses'][0]
 arange_epochs = np.arange(epochs)
 
-plt.plot(arange_epochs, train_l2s, label='Training Loss')
-plt.plot(arange_epochs, test_l2s, label='Testing Loss')
+plt.plot(arange_epochs, train_l2s, label='Training Set MSE')
+plt.plot(arange_epochs, test_l2s, label='Test Set MSE')
 plt.yscale('log')
-plt.title(f'Train/Test Loss Over {epochs} Epochs')
+plt.title(f'Train/Test MSE Over {epochs} Epochs with {which_loss} Loss')
 plt.xlabel('Epoch Number')
-plt.ylabel('Average L2 Norm')
+plt.ylabel('Average MSE')
 plt.legend()
 plt.savefig(path_plot)
 plt.show()
